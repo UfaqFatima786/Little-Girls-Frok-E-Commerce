@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
-import { useShop } from "../context/ShopContext";
+import { useShop } from "../context/useShop";
 import ProductCard from "../components/ProductCard";
 
 export default function Wishlist() {

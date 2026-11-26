@@ -1,10 +1,27 @@
 
 import { Link } from "react-router-dom";
 import { Heart, ShoppingBag, Star } from "lucide-react";
-import { useShop } from "../context/ShopContext";
+import { useShop } from "../context/useShop";
+import Swal from "sweetalert2";
 
 export default function ProductCard({ product }) {
   const { addToCart, toggleWishlist, isWishlisted } = useShop();
+
+  const handleAddToCart = async () => {
+    try {
+      await addToCart(product);
+    } catch (error) {
+      await Swal.fire("Could not add item", error.message, "error");
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    try {
+      await toggleWishlist(product);
+    } catch (error) {
+      await Swal.fire("Wishlist update failed", error.message, "error");
+    }
+  };
 
   return (
     <article className="product-card" data-reveal-card>
@@ -17,7 +34,7 @@ export default function ProductCard({ product }) {
 
         <button
           className={`wishlist-btn ${isWishlisted(product.id) ? "liked" : ""}`}
-          onClick={() => toggleWishlist(product)}
+          onClick={handleToggleWishlist}
           aria-label="Toggle wishlist"
         >
           <Heart
@@ -27,7 +44,7 @@ export default function ProductCard({ product }) {
 
         <button
           className="quick-add"
-          onClick={() => addToCart(product)}
+          onClick={handleAddToCart}
         >
           <ShoppingBag size={17} /> Add to Cart
         </button>

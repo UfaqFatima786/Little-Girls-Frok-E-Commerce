@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import Swal from "sweetalert2";
-import { useShop } from "../context/ShopContext";
+import { useShop } from "../context/useShop";
 
 const initialFields = {
   name: "",
@@ -59,7 +59,7 @@ export default function AuthModal() {
       return;
     }
 
-    const result = authenticate(mode, { name, email, password });
+    const result = await authenticate(mode, { name, email, password });
 
     if (!result.ok) {
       await Swal.fire(
@@ -70,11 +70,23 @@ export default function AuthModal() {
       return;
     }
 
+    if (result.emailConfirmationRequired) {
+      await Swal.fire({
+        title: "Check your email",
+        text: "Confirm your email address, then log in to continue.",
+        icon: "info",
+        confirmButtonColor: "#d85b91",
+      });
+      return;
+    }
+
     await Swal.fire({
       title: isSignup ? "Account created!" : "Welcome back!",
-      text: isSignup
-        ? "Your item has been added to the cart."
-        : "You are now logged in and your item is in the cart.",
+      text: result.action === "wishlist"
+        ? "You are signed in and the item is saved to your wishlist."
+        : result.action === "cart"
+          ? "You are signed in and the item has been added to your cart."
+          : "You are now signed in.",
       icon: "success",
       confirmButtonColor: "#d85b91",
     });

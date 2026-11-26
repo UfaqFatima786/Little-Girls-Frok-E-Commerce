@@ -1,20 +1,22 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useShop } from "../context/ShopContext";
+import { useShop } from "../context/useShop";
+import Swal from "sweetalert2";
 
 export default function Checkout() {
-  const { cart, cartTotal, removeFromCart } = useShop();
+  const { cart, cartTotal, authUser, profile, placeOrder } = useShop();
   const navigate = useNavigate();
   const [payment, setPayment] = useState("Cash on Delivery");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const delivery = cartTotal >= 5000 ? 0 : 200;
   const total = cartTotal + delivery;
 
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
+    name: profile?.full_name || authUser?.user_metadata?.full_name || "",
+    email: profile?.email || authUser?.email || "",
+    phone: profile?.phone || "",
     address: "",
     city: "Karachi"
   });
@@ -23,25 +25,26 @@ export default function Checkout() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!cart.length) return;
+    if (!cart.length || isSubmitting) return;
 
-    const order = {
-      customer: form,
-      products: cart,
-      payment,
-      total,
-      orderDate: new Date().toISOString()
-    };
-
-    console.log("Demo Order:", order);
-
-    cart.forEach(item => removeFromCart(item.id, item.size));
-
-    alert("Thank you! Your demo order has been placed.");
-    navigate("/");
+    setIsSubmitting(true);
+    try {
+      const orderId = await placeOrder(form, payment, delivery);
+      await Swal.fire({
+        title: "Order placed!",
+        text: `Your order number is ${orderId}.`,
+        icon: "success",
+        confirmButtonColor: "#d85b91",
+      });
+      navigate("/");
+    } catch (error) {
+      await Swal.fire("Order failed", error.message, "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!cart.length) {
@@ -67,13 +70,35 @@ export default function Checkout() {
           <h2>Delivery Information</h2>
 
           <label>Full Name</label>
-          <input name="name" value={form.name} onChange={handleChange} required />
+          <input
+            name="name"
+            value={
+              form.name ||
+              profile?.full_name ||
+              authUser?.user_metadata?.full_name ||
+              ""
+            }
+            onChange={handleChange}
+            required
+          />
 
           <label>Email Address</label>
-          <input type="email" name="email" value={form.email} onChange={handleChange} required />
+          <input
+            type="email"
+            name="email"
+            value={form.email || profile?.email || authUser?.email || ""}
+            onChange={handleChange}
+            required
+          />
 
           <label>Phone Number</label>
-          <input type="tel" name="phone" value={form.phone} onChange={handleChange} required />
+          <input
+            type="tel"
+            name="phone"
+            value={form.phone || profile?.phone || ""}
+            onChange={handleChange}
+            required
+          />
 
           <label>Delivery Address</label>
           <textarea name="address" value={form.address} onChange={handleChange} required />
@@ -93,7 +118,9 @@ export default function Checkout() {
           </label>
 
           <button className="primary-btn checkout-btn" type="submit">
-            Place Demo Order — Rs. {total.toLocaleString("en-PK")}
+            {isSubmitting
+              ? "Placing order…"
+              : `Place Order — Rs. ${total.toLocaleString("en-PK")}`}
           </button>
         </form>
 

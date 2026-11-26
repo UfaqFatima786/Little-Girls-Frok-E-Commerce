@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal } from "lucide-react";
-import products from "../data/products";
 import ProductCard from "../components/ProductCard";
+import { useShop } from "../context/useShop";
 export default function Shop() {
+  const { products, shopLoading, shopError } = useShop();
   const [searchParams] = useSearchParams();
   const initialCategory = searchParams.get("category") || "All";
   const [category, setCategory] = useState(initialCategory);
@@ -25,7 +26,7 @@ export default function Shop() {
     if (sort === "high") result.sort((a, b) => b.price - a.price);
     if (sort === "rating") result.sort((a, b) => b.rating - a.rating);
     return result;
-  }, [category, search, sort]);
+  }, [category, products, search, sort]);
   return (
     <main className="shop-page">
       <div className="page-banner">
@@ -65,8 +66,15 @@ export default function Shop() {
           ))}
         </div>
         <p className="result-count">
-          Showing {filteredProducts.length} beautiful dresses
+          {shopLoading
+            ? "Loading collection…"
+            : `Showing ${filteredProducts.length} beautiful dresses`}
         </p>
+        {shopError && (
+          <p className="shop-setup-warning" role="alert">
+            {shopError}
+          </p>
+        )}
         {filteredProducts.length > 0 ? (
           <div className="product-grid">
             {filteredProducts.map(product => (

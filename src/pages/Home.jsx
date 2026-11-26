@@ -4,9 +4,10 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import products from "../data/products";
+import Swal from "sweetalert2";
 import ProductCard from "../components/ProductCard";
 import CategoryCard from "../components/CategoryCard";
+import { useShop } from "../context/useShop";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -14,29 +15,33 @@ const ParticleBackground = lazy(
   () => import("../components/ParticleBackground"),
 );
 
-const categories = [
-  {
-    name: "Party Wear",
-    subtitle: "For special celebrations",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz7UDLo__ANzfDGbE24ywskRX_heQEeTUZMfSaisQg1g&s=10",
-  },
-  {
-    name: "Casual Wear",
-    subtitle: "Comfort meets style",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRzrW-G31QS2XjMdahEEEkU62Txq708fWDu6n-QI1J5Fg&s=10",
-  },
-  {
-    name: "Birthday Wear",
-    subtitle: "Make her day magical",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdqUbIasb66PBiph0GcwnSe-_tMvsMdA5m6N5tb3_9AA&s=10",
-  },
-];
-
 export default function Home() {
+  const {
+    products,
+    categories,
+    shopLoading,
+    shopError,
+    subscribeNewsletter,
+  } = useShop();
   const homeRef = useRef(null);
+
+  const handleNewsletterSubmit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const email = new FormData(form).get("email");
+
+    try {
+      await subscribeNewsletter(email);
+      await Swal.fire(
+        "You're on the list!",
+        "Thanks for joining Little Princess.",
+        "success",
+      );
+      form.reset();
+    } catch (error) {
+      await Swal.fire("Subscription failed", error.message, "error");
+    }
+  };
 
   useGSAP(
     () => {
@@ -230,6 +235,8 @@ export default function Home() {
             />
           ))}
         </div>
+        {shopLoading && <p className="result-count">Loading collection…</p>}
+        {shopError && <p className="result-count">{shopError}</p>}
 
         <div className="center-button">
           <Link to="/shop" className="outline-btn">
@@ -264,7 +271,10 @@ export default function Home() {
 
         <div className="promo-image">
           <img
-            src={products[2].image}
+            src={
+              products[2]?.image ||
+              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSG40w2VsD5cbfuuy4dMazO--0I6VIgSoDewOQ1Fdwn8Abk5xXwJJIzinfa&s=10"
+            }
             alt="Lavender princess dress from our collection"
             loading="lazy"
             decoding="async"
@@ -286,14 +296,9 @@ export default function Home() {
           Be the first to discover new collections and special offers.
         </p>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            alert("Thank you for joining Little Princess!");
-            e.target.reset();
-          }}
-        >
+        <form onSubmit={handleNewsletterSubmit}>
           <input
+            name="email"
             type="email"
             placeholder="Enter your email address"
             required

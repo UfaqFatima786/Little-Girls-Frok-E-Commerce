@@ -126,6 +126,11 @@ img {
   place-items: center;
 }
 
+.auth-logout {
+  border: 0;
+  background: transparent;
+}
+
 .menu-toggle {
   display: none;
   border: none;
@@ -769,6 +774,17 @@ img {
   color: var(--text);
   font-size: 12px;
   margin-bottom: 22px;
+}
+
+.shop-setup-warning {
+  margin: 0 0 24px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--light-pink);
+  color: var(--dark-pink);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 /* Product details */

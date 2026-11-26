@@ -1,15 +1,25 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import {
-  ShoppingBag, Heart, Menu, X, Crown
+  ShoppingBag, Heart, Menu, X, Crown, LogOut
 } from "lucide-react";
-import { useShop } from "../context/ShopContext";
+import { useShop } from "../context/useShop";
+import Swal from "sweetalert2";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { cartCount, wishlist } = useShop();
+  const { cartCount, wishlist, authUser, signOut } = useShop();
 
   const closeMenu = () => setMenuOpen(false);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      await Swal.fire("Signed out", "Your Supabase session has ended.", "success");
+    } catch (error) {
+      await Swal.fire("Sign out failed", error.message, "error");
+    }
+  };
 
   return (
     <>
@@ -49,6 +59,17 @@ export default function Navbar() {
             <ShoppingBag />
             <span className="count">{cartCount}</span>
           </Link>
+
+          {authUser && (
+            <button
+              className="nav-icon auth-logout"
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              title={`Sign out ${authUser.email}`}
+            >
+              <LogOut />
+            </button>
+          )}
         </div>
       </header>
     </>

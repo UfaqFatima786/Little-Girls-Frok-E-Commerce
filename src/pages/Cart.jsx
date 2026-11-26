@@ -1,10 +1,19 @@
 
 import { Link } from "react-router-dom";
 import { Trash2, ShoppingBag } from "lucide-react";
-import { useShop } from "../context/ShopContext";
+import { useShop } from "../context/useShop";
+import Swal from "sweetalert2";
 
 export default function Cart() {
   const { cart, removeFromCart, updateQuantity, cartTotal } = useShop();
+
+  const runCartUpdate = async (update) => {
+    try {
+      await update();
+    } catch (error) {
+      await Swal.fire("Cart update failed", error.message, "error");
+    }
+  };
 
   if (cart.length === 0) {
     return (
@@ -36,13 +45,13 @@ export default function Cart() {
                 <strong>Rs. {item.price.toLocaleString("en-PK")}</strong>
 
                 <div className="quantity-control">
-                  <button onClick={() =>
+                  <button onClick={() => runCartUpdate(() =>
                     updateQuantity(item.id, item.size, item.quantity - 1)
-                  }>−</button>
+                  )}>−</button>
                   <span>{item.quantity}</span>
-                  <button onClick={() =>
+                  <button onClick={() => runCartUpdate(() =>
                     updateQuantity(item.id, item.size, item.quantity + 1)
-                  }>+</button>
+                  )}>+</button>
                 </div>
               </div>
 
@@ -52,7 +61,9 @@ export default function Cart() {
                 </strong>
                 <button
                   className="remove-btn"
-                  onClick={() => removeFromCart(item.id, item.size)}
+                  onClick={() => runCartUpdate(() =>
+                    removeFromCart(item.id, item.size)
+                  )}
                   aria-label="Remove item"
                 >
                   <Trash2 size={19} />

@@ -2,28 +2,48 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Heart, ShoppingBag, Star, ArrowLeft } from "lucide-react";
-import products from "../data/products";
-import { useShop } from "../context/ShopContext";
+import { useShop } from "../context/useShop";
+import Swal from "sweetalert2";
 
 export default function ProductDetails() {
   const { id } = useParams();
+  const { products, shopLoading, shopError, addToCart, toggleWishlist, isWishlisted } = useShop();
   const product = products.find(p => p.id === Number(id));
 
-  const { addToCart, toggleWishlist, isWishlisted } = useShop();
-  const [size, setSize] = useState(product?.size[0] || "");
+  const [selectedSize, setSelectedSize] = useState(null);
+  const size =
+    selectedSize?.productId === product?.id
+      ? selectedSize.size
+      : product?.size[0] || "";
   const [quantity, setQuantity] = useState(1);
 
-  if (!product) {
+  if (shopLoading) {
+    return <div className="empty-state"><p>Loading product…</p></div>;
+  }
+
+  if (shopError || !product) {
     return (
       <div className="empty-state">
-        <h2>Product not found!</h2>
+        <h2>{shopError || "Product not found!"}</h2>
         <Link to="/shop" className="primary-btn">Back to Shop</Link>
       </div>
     );
   }
 
-  const handleAdd = () => {
-    addToCart(product, size, quantity);
+  const handleAdd = async () => {
+    try {
+      await addToCart(product, size, quantity);
+    } catch (error) {
+      await Swal.fire("Could not add item", error.message, "error");
+    }
+  };
+
+  const handleWishlist = async () => {
+    try {
+      await toggleWishlist(product);
+    } catch (error) {
+      await Swal.fire("Wishlist update failed", error.message, "error");
+    }
   };
 
   return (
@@ -61,7 +81,9 @@ export default function ProductDetails() {
                 <button
                   key={item}
                   className={size === item ? "size-btn active" : "size-btn"}
-                  onClick={() => setSize(item)}
+                  onClick={() =>
+                    setSelectedSize({ productId: product.id, size: item })
+                  }
                 >
                   {item}
                 </button>
@@ -85,7 +107,7 @@ export default function ProductDetails() {
 
             <button
               className={`details-wishlist ${isWishlisted(product.id) ? "liked" : ""}`}
-              onClick={() => toggleWishlist(product)}
+              onClick={handleWishlist}
               aria-label="Toggle wishlist"
             >
               <Heart fill={isWishlisted(product.id) ? "currentColor" : "none"} />
