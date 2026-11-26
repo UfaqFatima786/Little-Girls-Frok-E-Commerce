@@ -18,7 +18,11 @@ export default function Checkout() {
     email: profile?.email || authUser?.email || "",
     phone: profile?.phone || "",
     address: "",
-    city: "Karachi"
+    city: "Karachi",
+    state: "",
+    postalCode: "",
+    country: "Pakistan",
+    notes: "",
   });
 
   const handleChange = e => {
@@ -106,6 +110,16 @@ export default function Checkout() {
           <label>City</label>
           <input name="city" value={form.city} onChange={handleChange} required />
 
+          <label>State / Province</label>
+          <input name="state" value={form.state} onChange={handleChange} />
+
+          <label>Postal Code</label>
+          <input
+            name="postalCode"
+            value={form.postalCode}
+            onChange={handleChange}
+          />
+
           <h2>Payment Method</h2>
 
           <label className="payment-option">
@@ -128,10 +142,10 @@ export default function Checkout() {
           <h2>Your Order</h2>
 
           {cart.map(item => (
-            <div className="summary-row" key={`${item.id}-${item.size}`}>
+            <div className="summary-row" key={item.id}>
               <span>{item.name} × {item.quantity}</span>
               <strong>
-                Rs. {(item.price * item.quantity).toLocaleString("en-PK")}
+                Rs. {(Number(item.price) * item.quantity).toLocaleString("en-PK")}
               </strong>
             </div>
           ))}

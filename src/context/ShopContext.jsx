@@ -1,26 +1,33 @@
 import { useEffect, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { ShopContext } from "./shopContext.js";
+import localCategories from "../data/categories.js";
 
 const loadLocalProducts = async () => (await import("../data/products.js")).default;
-const loadLocalCategories = async () =>
-  (await import("../data/categories.js")).default;
 
 const mapProduct = (product) => ({
   ...product,
-  oldPrice: product.old_price,
-  size: product.sizes,
+  oldPrice: Number(product.price),
+  image: product.image_url || "",
+  badge: product.stock > 0 ? "In Stock" : "Sold Out",
+  rating: null,
+  size: [],
 });
 
 const mapCartRow = (row) => ({
   ...mapProduct(row.products),
-  size: row.size,
   quantity: row.quantity,
 });
 
+const isDatabaseProduct = (product) =>
+  typeof product?.id === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    product.id,
+  );
+
 export const ShopProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(localCategories);
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [authUser, setAuthUser] = useState(null);
@@ -36,46 +43,37 @@ export const ShopProvider = ({ children }) => {
   const [pendingAction, setPendingAction] = useState(null);
 
   const loadCatalog = async () => {
-    const [productsResult, categoriesResult] = await Promise.all([
-      supabase.from("products").select("*").order("id"),
-      supabase.from("categories").select("*").order("sort_order"),
-    ]);
+    const { data, error } = await supabase
+      .from("products")
+      .select("id,name,description,price,category,image_url,stock,is_active")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
 
-    if (productsResult.error) throw productsResult.error;
-    if (categoriesResult.error) throw categoriesResult.error;
+    if (error) throw error;
 
-    const catalogProducts = productsResult.data || [];
-    const catalogCategories = categoriesResult.data || [];
-
-    if (catalogProducts.length === 0) {
+    if (!data?.length) {
       setProducts(await loadLocalProducts());
-      setCategories(
-        catalogCategories.length ? catalogCategories : await loadLocalCategories(),
-      );
       setShopError(
-        "Your Supabase catalog is empty. Showing the saved local products temporarily; run supabase/seed.sql to load them into the database.",
+        "Supabase products table is empty. Showing the original catalog; run supabase/seed.sql to load all products and images.",
       );
       return;
     }
 
-    setProducts(catalogProducts.map(mapProduct));
-    setCategories(
-      catalogCategories.length ? catalogCategories : await loadLocalCategories(),
-    );
+    setProducts(data.map(mapProduct));
   };
 
   const loadUserData = async (userId) => {
     const [cartResult, wishlistResult, profileResult] = await Promise.all([
       supabase
         .from("cart_items")
-        .select("product_id,size,quantity,products(*)")
+        .select("product_id,quantity,products(*)")
         .eq("user_id", userId),
       supabase
-        .from("wishlist_items")
+        .from("wishlist")
         .select("product_id,products(*)")
         .eq("user_id", userId),
       supabase
-        .from("profiles")
+        .from("profiless")
         .select("id,full_name,email,phone,role,avatar_url")
         .eq("id", userId)
         .maybeSingle(),
@@ -85,19 +83,17 @@ export const ShopProvider = ({ children }) => {
     if (wishlistResult.error) throw wishlistResult.error;
     if (profileResult.error) throw profileResult.error;
 
-    setCart((cartResult.data || []).map(mapCartRow));
-    setProfile(profileResult.data);
+    setCart((cartResult.data || []).filter((row) => row.products).map(mapCartRow));
     setWishlist(
       (wishlistResult.data || [])
         .filter((row) => row.products)
         .map((row) => mapProduct(row.products)),
     );
+    setProfile(profileResult.data);
   };
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      return undefined;
-    }
+    if (!isSupabaseConfigured) return undefined;
 
     let active = true;
     let subscription;
@@ -119,9 +115,8 @@ export const ShopProvider = ({ children }) => {
             error.message?.includes("Could not find the table")
           ) {
             setProducts(await loadLocalProducts());
-            setCategories(await loadLocalCategories());
             setShopError(
-              "Supabase tables are not set up yet. Showing the saved local catalog for now; run the schema and seed SQL to enable Supabase data.",
+              "Supabase products table is not ready. Showing the original catalog; run supabase/seed.sql after creating the tables.",
             );
           } else {
             setShopError(error.message);
@@ -167,41 +162,52 @@ export const ShopProvider = ({ children }) => {
     };
   }, []);
 
-  const executePendingAction = async (userId, action) => {
-    if (action.type === "cart") {
+    const persistCartItem = async (product, quantity) => {
       const { error } = await supabase.rpc("add_to_cart", {
-        p_product_id: action.product.id,
-        p_size: action.size,
-        p_quantity: action.quantity,
+        p_product_id: product.id,
+        p_quantity: quantity,
       });
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from("wishlist_items").upsert(
-        { user_id: userId, product_id: action.product.id },
-        { onConflict: "user_id,product_id", ignoreDuplicates: true },
-      );
-      if (error) throw error;
-    }
+    if (error) throw error;
   };
 
-  const addToCart = async (product, size = product.size[0], quantity = 1) => {
+  const executePendingAction = async (userId, action) => {
+    if (action.type === "cart") {
+        await persistCartItem(action.product, action.quantity);
+      return;
+    }
+
+    const { error } = await supabase.from("wishlist").upsert(
+      { user_id: userId, product_id: action.product.id },
+      { onConflict: "user_id,product_id", ignoreDuplicates: true },
+    );
+    if (error) throw error;
+  };
+
+  const addToCart = async (product, _size, quantity = 1) => {
+    if (!isDatabaseProduct(product)) {
+      throw new Error(
+        "This product is not in Supabase yet. Run supabase/seed.sql, then refresh the page.",
+      );
+    }
+
     if (!authUser) {
-      setPendingAction({ type: "cart", product, size, quantity });
+      setPendingAction({ type: "cart", product, quantity });
       setAuthModalOpen(true);
       return false;
     }
 
-    const { error } = await supabase.rpc("add_to_cart", {
-      p_product_id: product.id,
-      p_size: size,
-      p_quantity: quantity,
-    });
-    if (error) throw error;
+    await persistCartItem(product, quantity);
     await loadUserData(authUser.id);
     return true;
   };
 
   const toggleWishlist = async (product) => {
+    if (!isDatabaseProduct(product)) {
+      throw new Error(
+        "This product is not in Supabase yet. Run supabase/seed.sql, then refresh the page.",
+      );
+    }
+
     if (!authUser) {
       setPendingAction({ type: "wishlist", product });
       setAuthModalOpen(true);
@@ -211,11 +217,11 @@ export const ShopProvider = ({ children }) => {
     const alreadyWishlisted = wishlist.some((item) => item.id === product.id);
     const result = alreadyWishlisted
       ? await supabase
-          .from("wishlist_items")
+          .from("wishlist")
           .delete()
           .eq("user_id", authUser.id)
           .eq("product_id", product.id)
-      : await supabase.from("wishlist_items").insert({
+      : await supabase.from("wishlist").insert({
           user_id: authUser.id,
           product_id: product.id,
         });
@@ -256,10 +262,13 @@ export const ShopProvider = ({ children }) => {
       if (pendingAction) {
         await executePendingAction(user.id, pendingAction);
         await loadUserData(user.id);
+        const action = pendingAction.type;
         setPendingAction(null);
+        setAuthModalOpen(false);
+        return { ok: true, user, action };
       }
       setAuthModalOpen(false);
-      return { ok: true, user, action: pendingAction?.type || null };
+      return { ok: true, user, action: null };
     } catch (error) {
       return { ok: false, message: error.message, authenticated: true };
     }
@@ -270,44 +279,39 @@ export const ShopProvider = ({ children }) => {
     setPendingAction(null);
   };
 
-  const removeFromCart = async (id, size) => {
+  const removeFromCart = async (productId) => {
     const { error } = await supabase
       .from("cart_items")
       .delete()
       .eq("user_id", authUser.id)
-      .eq("product_id", id)
-      .eq("size", size);
+      .eq("product_id", productId);
     if (error) throw error;
     await loadUserData(authUser.id);
   };
 
-  const updateQuantity = async (id, size, quantity) => {
+  const updateQuantity = async (productId, quantity) => {
     if (quantity < 1) return;
 
     const { error } = await supabase
       .from("cart_items")
-      .update({ quantity })
+      .update({ quantity, updated_at: new Date().toISOString() })
       .eq("user_id", authUser.id)
-      .eq("product_id", id)
-      .eq("size", size);
+      .eq("product_id", productId);
     if (error) throw error;
     await loadUserData(authUser.id);
   };
 
-  const placeOrder = async (form, paymentMethod, deliveryFee) => {
+  const placeOrder = async (form, _paymentMethod, _deliveryFee) => {
     const { data, error } = await supabase.rpc("place_order", {
-      p_customer_name: form.name,
-      p_customer_email: form.email,
+      p_full_name: form.name,
+      p_email: form.email,
       p_phone: form.phone,
-      p_address: form.address,
+      p_address_line: form.address,
       p_city: form.city,
-      p_payment_method: paymentMethod,
-      p_delivery_fee: deliveryFee,
-      p_items: cart.map((item) => ({
-        product_id: item.id,
-        size: item.size,
-        quantity: item.quantity,
-      })),
+      p_state: form.state || null,
+      p_postal_code: form.postalCode || null,
+      p_country: form.country || "Pakistan",
+      p_notes: form.notes || null,
     });
 
     if (error) throw error;
@@ -331,12 +335,13 @@ export const ShopProvider = ({ children }) => {
     setAuthUser(null);
     setCart([]);
     setWishlist([]);
+    setProfile(null);
   };
 
   const isWishlisted = (id) => wishlist.some((item) => item.id === id);
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
+    (total, item) => total + Number(item.price) * item.quantity,
     0,
   );
 

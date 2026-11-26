@@ -8,13 +8,8 @@ import Swal from "sweetalert2";
 export default function ProductDetails() {
   const { id } = useParams();
   const { products, shopLoading, shopError, addToCart, toggleWishlist, isWishlisted } = useShop();
-  const product = products.find(p => p.id === Number(id));
+  const product = products.find((item) => String(item.id) === id);
 
-  const [selectedSize, setSelectedSize] = useState(null);
-  const size =
-    selectedSize?.productId === product?.id
-      ? selectedSize.size
-      : product?.size[0] || "";
   const [quantity, setQuantity] = useState(1);
 
   if (shopLoading) {
@@ -32,7 +27,7 @@ export default function ProductDetails() {
 
   const handleAdd = async () => {
     try {
-      await addToCart(product, size, quantity);
+      await addToCart(product, null, quantity);
     } catch (error) {
       await Swal.fire("Could not add item", error.message, "error");
     }
@@ -55,41 +50,32 @@ export default function ProductDetails() {
       <section className="details-layout">
         <div className="details-image">
           <img src={product.image} alt={product.name} />
-          <span className="product-badge">{product.badge}</span>
+          {product.badge && (
+            <span className="product-badge">{product.badge}</span>
+          )}
         </div>
 
         <div className="details-info">
           <span className="section-label">{product.category}</span>
           <h1>{product.name}</h1>
 
-          <div className="rating">
-            <Star size={17} fill="currentColor" />
-            {product.rating} / 5
-          </div>
+          {product.rating != null && (
+            <div className="rating">
+              <Star size={17} fill="currentColor" />
+              {product.rating} / 5
+            </div>
+          )}
 
           <div className="details-price">
-            Rs. {product.price.toLocaleString("en-PK")}
-            <del>Rs. {product.oldPrice.toLocaleString("en-PK")}</del>
+            Rs. {Number(product.price).toLocaleString("en-PK")}
+            {Number(product.oldPrice) > Number(product.price) && (
+              <del>
+                Rs. {Number(product.oldPrice).toLocaleString("en-PK")}
+              </del>
+            )}
           </div>
 
           <p className="details-description">{product.description}</p>
-
-          <div className="size-selector">
-            <h3>Select Size</h3>
-            <div className="size-options">
-              {product.size.map(item => (
-                <button
-                  key={item}
-                  className={size === item ? "size-btn active" : "size-btn"}
-                  onClick={() =>
-                    setSelectedSize({ productId: product.id, size: item })
-                  }
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div className="quantity-selector">
             <h3>Quantity</h3>

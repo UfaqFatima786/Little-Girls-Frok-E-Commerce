@@ -45,24 +45,6 @@ The project is developed using React's component-based architecture, making the 
 | Supabase | Authentication and persistent e-commerce data |
 | Git & GitHub | Version control |
 
-## ☁️ Supabase Setup
-
-1. Create a Supabase project and open **Project Settings → API** (or **Connect**).
-2. Copy the Project URL and the public **Publishable key** (legacy projects may show an `anon` key).
-3. Copy `.env.example` to `.env.local` and set:
-
-   ```env
-   VITE_SUPABASE_URL=https://your-project-id.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-public-publishable-or-anon-key
-   ```
-
-4. In the Supabase Dashboard, open **SQL Editor** and run `supabase/migrations/20261126000000_initial_schema.sql`.
-5. Run `supabase/seed.sql` in the SQL Editor to load the existing categories and 26 products.
-6. In **Authentication → URL Configuration**, add `http://localhost:5173` as a redirect URL. Add your deployed site URL there before production signup.
-7. Restart the Vite server with `npm run dev`.
-
-The app stores passwords only in Supabase Auth. The `profiles` table contains account display data (`full_name`, `email`, `phone`, `role`, and `avatar_url`), never passwords; the migration creates profiles for new Auth signups and backfills existing Auth users without changing existing profiles. Cart items, wishlists, orders, catalog, and newsletter subscriptions are stored in Supabase tables. Row Level Security restricts private records to their owner. Only the URL and public publishable/anon key belong in `.env.local`; **never put a `service_role` key in frontend code or `.env` variables prefixed with `VITE_`**.
-
 ## 🎨 Design Highlights
 
 - Premium pink and white boutique theme.

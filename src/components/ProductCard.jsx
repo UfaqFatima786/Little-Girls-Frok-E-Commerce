@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 
 export default function ProductCard({ product }) {
   const { addToCart, toggleWishlist, isWishlisted } = useShop();
+  const outOfStock = product.stock !== undefined && Number(product.stock) <= 0;
 
   const handleAddToCart = async () => {
     try {
@@ -27,10 +28,12 @@ export default function ProductCard({ product }) {
     <article className="product-card" data-reveal-card>
       <div className="product-image">
         <Link to={`/product/${product.id}`}>
-          <img src={product.image} alt={product.name} />
+          <img src={product.image} alt={product.name} loading="lazy" />
         </Link>
 
-        <span className="product-badge">{product.badge}</span>
+        {product.badge && (
+          <span className="product-badge">{product.badge}</span>
+        )}
 
         <button
           className={`wishlist-btn ${isWishlisted(product.id) ? "liked" : ""}`}
@@ -45,8 +48,9 @@ export default function ProductCard({ product }) {
         <button
           className="quick-add"
           onClick={handleAddToCart}
+          disabled={outOfStock}
         >
-          <ShoppingBag size={17} /> Add to Cart
+          <ShoppingBag size={17} /> {outOfStock ? "Sold Out" : "Add to Cart"}
         </button>
       </div>
 
@@ -57,14 +61,22 @@ export default function ProductCard({ product }) {
           {product.name}
         </Link>
 
-        <div className="rating">
-          <Star size={15} fill="currentColor" />
-          {product.rating}
-        </div>
+        {product.rating != null && (
+          <div className="rating">
+            <Star size={15} fill="currentColor" />
+            {product.rating}
+          </div>
+        )}
 
         <div className="product-price">
-          <strong>Rs. {product.price.toLocaleString("en-PK")}</strong>
-          <del>Rs. {product.oldPrice.toLocaleString("en-PK")}</del>
+          <strong>
+            Rs. {Number(product.price).toLocaleString("en-PK")}
+          </strong>
+          {Number(product.oldPrice) > Number(product.price) && (
+            <del>
+              Rs. {Number(product.oldPrice).toLocaleString("en-PK")}
+            </del>
+          )}
         </div>
       </div>
     </article>

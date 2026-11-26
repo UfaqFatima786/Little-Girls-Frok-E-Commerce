@@ -36,33 +36,34 @@ export default function Cart() {
       <div className="cart-layout">
         <div className="cart-items">
           {cart.map(item => (
-            <div className="cart-item" key={`${item.id}-${item.size}`}>
+            <div className="cart-item" key={item.id}>
               <img src={item.image} alt={item.name} />
 
               <div className="cart-item-info">
                 <h3>{item.name}</h3>
-                <p>Size: {item.size}</p>
-                <strong>Rs. {item.price.toLocaleString("en-PK")}</strong>
+                <strong>
+                  Rs. {Number(item.price).toLocaleString("en-PK")}
+                </strong>
 
                 <div className="quantity-control">
                   <button onClick={() => runCartUpdate(() =>
-                    updateQuantity(item.id, item.size, item.quantity - 1)
+                    updateQuantity(item.id, item.quantity - 1)
                   )}>−</button>
                   <span>{item.quantity}</span>
                   <button onClick={() => runCartUpdate(() =>
-                    updateQuantity(item.id, item.size, item.quantity + 1)
+                    updateQuantity(item.id, item.quantity + 1)
                   )}>+</button>
                 </div>
               </div>
 
               <div className="cart-item-end">
                 <strong>
-                  Rs. {(item.price * item.quantity).toLocaleString("en-PK")}
+                  Rs. {(Number(item.price) * item.quantity).toLocaleString("en-PK")}
                 </strong>
                 <button
                   className="remove-btn"
                   onClick={() => runCartUpdate(() =>
-                    removeFromCart(item.id, item.size)
+                    removeFromCart(item.id)
                   )}
                   aria-label="Remove item"
                 >
