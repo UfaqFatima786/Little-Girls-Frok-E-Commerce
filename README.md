@@ -54,6 +54,8 @@ The project is developed using React's component-based architecture, making the 
 
 The supplied product schema has no size, rating, or sale-price columns, so the storefront does not request or store product sizes. Product images are loaded from `image_url`.
 
+If newsletter signup returns a row-level security error, run `supabase/fixes/newsletter_insert_rls.sql` in the Supabase SQL Editor. Newsletter signup now uses INSERT (not UPSERT), so duplicate email submissions are handled without requiring newsletter read/update access.
+
 ## 🎨 Design Highlights
 
 - Premium pink and white boutique theme.

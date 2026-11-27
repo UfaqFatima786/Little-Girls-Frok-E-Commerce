@@ -155,8 +155,25 @@ create policy "Users manage their own addresses"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
-drop policy if exists "Anyone subscribes to the newsletter"
-  on public.newsletter_subscribers;
+do $$
+declare
+  insert_policy record;
+begin
+  for insert_policy in
+    select policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'newsletter_subscribers'
+      and cmd in ('INSERT', 'ALL')
+  loop
+    execute format(
+      'drop policy %I on public.newsletter_subscribers',
+      insert_policy.policyname
+    );
+  end loop;
+end;
+$$;
+
 create policy "Anyone subscribes to the newsletter"
   on public.newsletter_subscribers for insert to anon, authenticated
   with check (email ~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$');

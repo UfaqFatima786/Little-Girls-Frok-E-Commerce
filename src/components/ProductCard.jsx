@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Heart, ShoppingBag, Star } from "lucide-react";
 import { useShop } from "../context/useShop";

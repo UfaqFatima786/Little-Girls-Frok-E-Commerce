@@ -319,12 +319,11 @@ export const ShopProvider = ({ children }) => {
   };
 
   const subscribeNewsletter = async (email) => {
-    const { error } = await supabase
-      .from("newsletter_subscribers")
-      .upsert(
-        { email: email.trim().toLowerCase() },
-        { onConflict: "email", ignoreDuplicates: true },
-      );
+    const { error } = await supabase.from("newsletter_subscribers").insert({
+      email: email.trim().toLowerCase(),
+    });
+
+    if (error?.code === "23505") return;
     if (error) throw error;
   };
 
