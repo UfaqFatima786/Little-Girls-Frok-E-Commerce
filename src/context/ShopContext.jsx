@@ -27,7 +27,6 @@ const isDatabaseProduct = (product) =>
 
 export const ShopProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState(localCategories);
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [authUser, setAuthUser] = useState(null);
@@ -54,7 +53,7 @@ export const ShopProvider = ({ children }) => {
     if (!data?.length) {
       setProducts(await loadLocalProducts());
       setShopError(
-        "Supabase products table is empty. Showing the original catalog; run supabase/seed.sql to load all products and images.",
+        "No active products are visible from Supabase. Showing the original catalog; run the schema migration and supabase/seed.sql, then refresh.",
       );
       return;
     }
@@ -74,7 +73,7 @@ export const ShopProvider = ({ children }) => {
         .eq("user_id", userId),
       supabase
         .from("profiless")
-        .select("id,full_name,email,phone,role,avatar_url")
+        .select("id,full_name,phone,avatar_url")
         .eq("id", userId)
         .maybeSingle(),
     ]);
@@ -162,17 +161,17 @@ export const ShopProvider = ({ children }) => {
     };
   }, []);
 
-    const persistCartItem = async (product, quantity) => {
-      const { error } = await supabase.rpc("add_to_cart", {
-        p_product_id: product.id,
-        p_quantity: quantity,
-      });
+  const persistCartItem = async (product, quantity) => {
+    const { error } = await supabase.rpc("add_to_cart", {
+      p_product_id: product.id,
+      p_quantity: quantity,
+    });
     if (error) throw error;
   };
 
   const executePendingAction = async (userId, action) => {
     if (action.type === "cart") {
-        await persistCartItem(action.product, action.quantity);
+      await persistCartItem(action.product, action.quantity);
       return;
     }
 
@@ -301,7 +300,7 @@ export const ShopProvider = ({ children }) => {
     await loadUserData(authUser.id);
   };
 
-  const placeOrder = async (form, _paymentMethod, _deliveryFee) => {
+  const placeOrder = async (form) => {
     const { data, error } = await supabase.rpc("place_order", {
       p_full_name: form.name,
       p_email: form.email,
@@ -349,7 +348,7 @@ export const ShopProvider = ({ children }) => {
     <ShopContext.Provider
       value={{
         products,
-        categories,
+      categories: localCategories,
         cart,
         wishlist,
         authUser,

@@ -248,9 +248,11 @@ begin
     raise exception 'This product is no longer available.';
   end if;
 
-  select coalesce(quantity, 0) into v_in_cart
-  from public.cart_items
-  where user_id = v_user_id and product_id = p_product_id;
+  select coalesce((
+    select quantity
+    from public.cart_items
+    where user_id = v_user_id and product_id = p_product_id
+  ), 0) into v_in_cart;
 
   if v_in_cart + p_quantity > v_stock then
     raise exception 'Requested quantity is greater than available stock.';

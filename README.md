@@ -45,6 +45,15 @@ The project is developed using React's component-based architecture, making the 
 | Supabase | Authentication and persistent e-commerce data |
 | Git & GitHub | Version control |
 
+## Supabase setup
+
+1. Copy `.env.example` to `.env.local` and set your Supabase project URL and public publishable/anon key. Never expose a `service_role` key in the React app.
+2. In Supabase SQL Editor, run `supabase/migrations/20261126000000_initial_schema.sql`. It creates or reuses the supplied UUID schema (`products`, `cart_items`, `wishlist`, `orders`, `order_items`, `addresses`, and the account table named `profiless`) and configures row-level security, signup profiles, and cart/order functions.
+3. Run `supabase/seed.sql` to add the original 26 product records and image URLs. Existing rows with the same product names are left untouched. Newly seeded demo products start with stock 10; adjust it to real inventory.
+4. Restart the Vite dev server and refresh the storefront.
+
+The supplied product schema has no size, rating, or sale-price columns, so the storefront does not request or store product sizes. Product images are loaded from `image_url`.
+
 ## 🎨 Design Highlights
 
 - Premium pink and white boutique theme.

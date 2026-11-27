@@ -16,7 +16,7 @@ export default function ProductDetails() {
     return <div className="empty-state"><p>Loading product…</p></div>;
   }
 
-  if (shopError || !product) {
+  if (!product) {
     return (
       <div className="empty-state">
         <h2>{shopError || "Product not found!"}</h2>
@@ -56,6 +56,11 @@ export default function ProductDetails() {
         </div>
 
         <div className="details-info">
+          {shopError && (
+            <p className="shop-setup-warning" role="alert">
+              {shopError}
+            </p>
+          )}
           <span className="section-label">{product.category}</span>
           <h1>{product.name}</h1>
 
@@ -87,13 +92,31 @@ export default function ProductDetails() {
           </div>
 
           <div className="details-actions">
-            <button className="primary-btn" onClick={handleAdd}>
+            <button
+              className="primary-btn"
+              onClick={handleAdd}
+              disabled={
+                typeof product.id !== "string" ||
+                (product.stock !== undefined && Number(product.stock) <= 0)
+              }
+              title={
+                typeof product.id !== "string"
+                  ? "Run supabase/seed.sql to enable this product"
+                  : undefined
+              }
+            >
               <ShoppingBag size={19} /> Add to Cart
             </button>
 
             <button
               className={`details-wishlist ${isWishlisted(product.id) ? "liked" : ""}`}
               onClick={handleWishlist}
+              disabled={typeof product.id !== "string"}
+              title={
+                typeof product.id !== "string"
+                  ? "Run supabase/seed.sql to enable this product"
+                  : undefined
+              }
               aria-label="Toggle wishlist"
             >
               <Heart fill={isWishlisted(product.id) ? "currentColor" : "none"} />
@@ -102,7 +125,7 @@ export default function ProductDetails() {
 
           <div className="product-meta">
             <p>Category: {product.category}</p>
-            <p>Color: {product.color}</p>
+            {product.color && <p>Color: {product.color}</p>}
             <p>Product ID: LP-{product.id}</p>
           </div>
 

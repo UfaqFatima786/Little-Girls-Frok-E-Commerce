@@ -6,6 +6,11 @@ import Swal from "sweetalert2";
 
 export default function ProductCard({ product }) {
   const { addToCart, toggleWishlist, isWishlisted } = useShop();
+  const isDatabaseProduct =
+    typeof product.id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      product.id,
+    );
   const outOfStock = product.stock !== undefined && Number(product.stock) <= 0;
 
   const handleAddToCart = async () => {
@@ -38,6 +43,8 @@ export default function ProductCard({ product }) {
         <button
           className={`wishlist-btn ${isWishlisted(product.id) ? "liked" : ""}`}
           onClick={handleToggleWishlist}
+          disabled={!isDatabaseProduct}
+          title={!isDatabaseProduct ? "Run supabase/seed.sql to enable this product" : "Toggle wishlist"}
           aria-label="Toggle wishlist"
         >
           <Heart
@@ -48,9 +55,20 @@ export default function ProductCard({ product }) {
         <button
           className="quick-add"
           onClick={handleAddToCart}
-          disabled={outOfStock}
+          disabled={!isDatabaseProduct || outOfStock}
+          title={
+            !isDatabaseProduct
+              ? "Run supabase/seed.sql to enable this product"
+              : undefined
+          }
         >
-          <ShoppingBag size={17} /> {outOfStock ? "Sold Out" : "Add to Cart"}
+          <ShoppingBag size={17} /> {
+            !isDatabaseProduct
+              ? "Setup Required"
+              : outOfStock
+                ? "Sold Out"
+                : "Add to Cart"
+          }
         </button>
       </div>
 

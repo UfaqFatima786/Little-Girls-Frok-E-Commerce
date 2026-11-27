@@ -36,7 +36,7 @@ export default function Checkout() {
 
     setIsSubmitting(true);
     try {
-      const orderId = await placeOrder(form, payment, delivery);
+      const orderId = await placeOrder(form);
       await Swal.fire({
         title: "Order placed!",
         text: `Your order number is ${orderId}.`,
