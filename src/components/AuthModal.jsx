@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import Swal from "sweetalert2";
+import Swal from "../lib/alerts";
 import { useShop } from "../context/useShop";
 
 const initialFields = {
@@ -75,7 +75,6 @@ export default function AuthModal() {
         title: "Check your email",
         text: "Confirm your email address, then log in to continue.",
         icon: "info",
-        confirmButtonColor: "#d85b91",
       });
       return;
     }
@@ -88,7 +87,6 @@ export default function AuthModal() {
           ? "You are signed in and the item has been added to your cart."
           : "You are now signed in.",
       icon: "success",
-      confirmButtonColor: "#d85b91",
     });
   };
 

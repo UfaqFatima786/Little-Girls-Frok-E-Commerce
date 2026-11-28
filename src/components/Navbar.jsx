@@ -4,7 +4,7 @@ import {
   ShoppingBag, Heart, Menu, X, Crown, LogOut
 } from "lucide-react";
 import { useShop } from "../context/useShop";
-import Swal from "sweetalert2";
+import Swal from "../lib/alerts";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -15,7 +15,11 @@ export default function Navbar() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      await Swal.fire("Signed out", "Your Supabase session has ended.", "success");
+      await Swal.fire(
+        "Signed out",
+        "Your account has been signed out successfully.",
+        "success",
+      );
     } catch (error) {
       await Swal.fire("Sign out failed", error.message, "error");
     }

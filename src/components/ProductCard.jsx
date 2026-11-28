@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Heart, ShoppingBag, Star } from "lucide-react";
 import { useShop } from "../context/useShop";
-import Swal from "sweetalert2";
+import Swal from "../lib/alerts";
 
 export default function ProductCard({ product }) {
   const { addToCart, toggleWishlist, isWishlisted } = useShop();

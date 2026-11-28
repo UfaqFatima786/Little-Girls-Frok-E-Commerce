@@ -1,7 +1,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Download, Trash2 } from "lucide-react";
-import Swal from "sweetalert2";
+import Swal from "../../lib/alerts";
 import { supabase } from "../../lib/supabase";
 import { formatDate } from "../utils";
 
@@ -39,7 +39,6 @@ export default function Subscribers() {
       text: row.email,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#bd4078",
     });
 
     if (!isConfirmed) return;

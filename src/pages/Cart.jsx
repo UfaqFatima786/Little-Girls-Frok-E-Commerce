@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Trash2, ShoppingBag } from "lucide-react";
 import { useShop } from "../context/useShop";
-import Swal from "sweetalert2";
+import Swal from "../lib/alerts";
 
 export default function Cart() {
   const { cart, removeFromCart, updateQuantity, cartTotal } = useShop();

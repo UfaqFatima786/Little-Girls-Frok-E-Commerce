@@ -62,7 +62,19 @@ export const ShopProvider = ({ children }) => {
   };
 
   const loadUserData = async (userId) => {
-    const [cartResult, wishlistResult, profileResult] = await Promise.all([
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiless")
+      .select("id,full_name,phone,avatar_url")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profileError) throw profileError;
+    if (!profileData) {
+      throw new Error(
+        "This is an old account. Please create a new account using Sign Up."
+      );
+    }
+
+    const [cartResult, wishlistResult] = await Promise.all([
       supabase
         .from("cart_items")
         .select("product_id,quantity,products(*)")
@@ -71,25 +83,25 @@ export const ShopProvider = ({ children }) => {
         .from("wishlist")
         .select("product_id,products(*)")
         .eq("user_id", userId),
-      supabase
-        .from("profiless")
-        .select("id,full_name,phone,avatar_url")
-        .eq("id", userId)
-        .maybeSingle(),
     ]);
-
     if (cartResult.error) throw cartResult.error;
     if (wishlistResult.error) throw wishlistResult.error;
-    if (profileResult.error) throw profileResult.error;
 
-    setCart((cartResult.data || []).filter((row) => row.products).map(mapCartRow));
+    setCart(
+      (cartResult.data || [])
+        .filter((row) => row.products)
+        .map(mapCartRow)
+    );
+
     setWishlist(
       (wishlistResult.data || [])
         .filter((row) => row.products)
-        .map((row) => mapProduct(row.products)),
+        .map((row) => mapProduct(row.products))
     );
-    setProfile(profileResult.data);
+
+    setProfile(profileData);
   };
+
 
   useEffect(() => {
     if (!isSupabaseConfigured) return undefined;
@@ -216,62 +228,93 @@ export const ShopProvider = ({ children }) => {
     const alreadyWishlisted = wishlist.some((item) => item.id === product.id);
     const result = alreadyWishlisted
       ? await supabase
-          .from("wishlist")
-          .delete()
-          .eq("user_id", authUser.id)
-          .eq("product_id", product.id)
+        .from("wishlist")
+        .delete()
+        .eq("user_id", authUser.id)
+        .eq("product_id", product.id)
       : await supabase.from("wishlist").insert({
-          user_id: authUser.id,
-          product_id: product.id,
-        });
+        user_id: authUser.id,
+        product_id: product.id,
+      });
 
     if (result.error) throw result.error;
     await loadUserData(authUser.id);
     return true;
   };
 
+
   const authenticate = async (mode, { name, email, password }) => {
     if (!supabase) {
       return {
         ok: false,
-        message: "Add your Supabase URL and publishable key to .env.local first.",
+        message: "Supabase is not configured.",
       };
     }
 
     const result =
       mode === "signup"
         ? await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { full_name: name.trim() } },
-          })
-        : await supabase.auth.signInWithPassword({ email, password });
+          email: email.trim().toLowerCase(),
+          password,
+          options: {
+            data: { full_name: name.trim() },
+          },
+        })
+        : await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
 
-    if (result.error) return { ok: false, message: result.error.message };
+    if (result.error) {
+      return {
+        ok: false,
+        message: result.error.message,
+      };
+    }
 
     if (!result.data.session) {
-      return { ok: true, emailConfirmationRequired: true };
+      return {
+        ok: true,
+        emailConfirmationRequired: true,
+      };
     }
 
     const user = result.data.session.user;
-    setAuthUser(user);
 
     try {
       await loadUserData(user.id);
+
+      setAuthUser(user);
+
       if (pendingAction) {
         await executePendingAction(user.id, pendingAction);
         await loadUserData(user.id);
+
         const action = pendingAction.type;
         setPendingAction(null);
         setAuthModalOpen(false);
+
         return { ok: true, user, action };
       }
+
       setAuthModalOpen(false);
+
       return { ok: true, user, action: null };
     } catch (error) {
-      return { ok: false, message: error.message, authenticated: true };
+      await supabase.auth.signOut();
+
+      setAuthUser(null);
+      setCart([]);
+      setWishlist([]);
+      setProfile(null);
+
+      return {
+        ok: false,
+        message: error.message,
+      };
     }
   };
+
 
   const closeAuthModal = () => {
     setAuthModalOpen(false);
@@ -347,7 +390,7 @@ export const ShopProvider = ({ children }) => {
     <ShopContext.Provider
       value={{
         products,
-      categories: localCategories,
+        categories: localCategories,
         cart,
         wishlist,
         authUser,

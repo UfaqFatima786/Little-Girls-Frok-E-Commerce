@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Eye, X } from "lucide-react";
-import Swal from "sweetalert2";
+import Swal from "../../lib/alerts";
 import { supabase } from "../../lib/supabase";
 import { formatDate, money, ORDER_STATUSES, PAYMENT_STATUSES } from "../utils";
 

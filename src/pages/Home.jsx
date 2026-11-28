@@ -4,7 +4,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import Swal from "sweetalert2";
+import Swal from "../lib/alerts";
 import ProductCard from "../components/ProductCard";
 import CategoryCard from "../components/CategoryCard";
 import { useShop } from "../context/useShop";

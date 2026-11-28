@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
-import Swal from "sweetalert2";
+import Swal from "../../lib/alerts";
 import { supabase } from "../../lib/supabase";
 import { money } from "../utils";
 
@@ -148,7 +148,6 @@ export default function Products() {
       text: `"${product.name}" will be removed permanently. Past orders keep their details.`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#bd4078",
       confirmButtonText: "Delete",
     });
     if (!isConfirmed) return;

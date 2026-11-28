@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/useShop";
-import Swal from "sweetalert2";
+import Swal from "../lib/alerts";
 
 export default function Checkout() {
   const { cart, cartTotal, authUser, profile, placeOrder } = useShop();
@@ -41,7 +41,6 @@ export default function Checkout() {
         title: "Order placed!",
         text: `Your order number is ${orderId}.`,
         icon: "success",
-        confirmButtonColor: "#d85b91",
       });
       navigate("/");
     } catch (error) {

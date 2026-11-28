@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Heart, ShoppingBag, Star, ArrowLeft } from "lucide-react";
 import { useShop } from "../context/useShop";
-import Swal from "sweetalert2";
+import Swal from "../lib/alerts";
 
 export default function ProductDetails() {
   const { id } = useParams();
